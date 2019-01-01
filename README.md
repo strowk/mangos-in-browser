@@ -11,7 +11,7 @@ go get github.com/strowk/mangos-in-browser
 Navigate to `github.com/strowk/mangos-in-browser` in your `GOPATH`.
 
 ``` bash
-./build # would build client 
+./build-client
 go run ./server.go
 ```
 

@@ -3,6 +3,7 @@
 ## Get
 
 ``` bash
+go get github.com/strowk/websocket
 go get github.com/strowk/mangos-in-browser
 ```
 

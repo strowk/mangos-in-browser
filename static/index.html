@@ -1,0 +1,27 @@
+<html>
+<body>
+    <script src="wasm_exec.js"></script>
+    <script>
+        let mod;
+        WebAssembly.compileStreaming(fetch('main.wasm')).then((res) => {
+            mod = res;
+            run();  
+        });
+
+        let callReq
+        function setReq(callback){
+            callReq = callback;
+            document.getElementById("runButton").disabled = false;
+        }
+
+        async function run() {
+                var newgo = new Go();
+                var inst = await WebAssembly.instantiate(mod, newgo.importObject);
+                newgo.run(inst)
+        }
+        
+    </script>
+    <button onClick="callReq();" id="runButton" disabled>Go</button>
+    <div id="result"></div>
+</body>
+</html>

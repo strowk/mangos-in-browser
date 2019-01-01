@@ -16,4 +16,4 @@ Navigate to `github.com/strowk/mangos-in-browser` in your `GOPATH`.
 go run ./server.go
 ```
 
-Open localhost:8080, press Go.
+Open `http://localhost:8080/static/`, press Go.

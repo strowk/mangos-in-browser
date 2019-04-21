@@ -1,7 +1,5 @@
 // MIT Licensed
 
-// +build wasm
-
 package wasm
 
 import (
@@ -13,50 +11,57 @@ import (
 	mangos "nanomsg.org/go-mangos"
 )
 
-// WASMMangosTransport
-type WASMMangosTransport struct {
+// MangosTransport is a transport which implements only
+// dialer using javascript websocket, when runned
+// in Web Assembly environment in browser.
+type MangosTransport struct {
 }
 
 // NewWASMTransport implements WebSocket transport
 // from Web Assembly environment in browser.
 // Read more about Web Assembly in https://webassembly.org/
-func NewWASMTransport() mangos.Transport {
-	return &WASMMangosTransport{}
+func NewTransport() mangos.Transport {
+	return &MangosTransport{}
 }
 
 // NewListener would return error, because browser cannot listen.
-func (nng *WASMMangosTransport) NewListener(addr string, sock mangos.Socket) (mangos.PipeListener, error) {
+func (nng *MangosTransport) NewListener(
+	addr string,
+	sock mangos.Socket,
+) (mangos.PipeListener, error) {
 	return nil, errors.New("Cannot support listen in WASM")
 }
 
 // Scheme would be ws for WebSocket.
-func (nng *WASMMangosTransport) Scheme() string {
+func (nng *MangosTransport) Scheme() string {
 	return "ws"
 }
 
-// WASMDialerWST dials websocket.
-type WASMDialerWST struct {
+// DialerWS dials websocket.
+type DialerWS struct {
 	sock mangos.Socket
 	url  string
 }
 
 // NewDialer creates WASMDialerWST.
-func (nng *WASMMangosTransport) NewDialer(url string, sock mangos.Socket) (mangos.PipeDialer, error) {
-	return &WASMDialerWST{
+func (nng *MangosTransport) NewDialer(
+	url string,
+	sock mangos.Socket) (mangos.PipeDialer, error) {
+	return &DialerWS{
 		sock: sock,
 		url:  url,
 	}, nil
 }
 
-// WASMPipeWS works with websocket connection.
-type WASMPipeWS struct {
+// PipeWS works with websocket connection.
+type PipeWS struct {
 	open  bool
 	conn  *net.Conn
 	proto mangos.Protocol
 }
 
 // Send sends a complete message to websocket.
-func (pipe *WASMPipeWS) Send(msg *mangos.Message) error {
+func (pipe *PipeWS) Send(msg *mangos.Message) error {
 	if msg.Expired() {
 		msg.Free()
 		return nil
@@ -79,7 +84,7 @@ func (pipe *WASMPipeWS) Send(msg *mangos.Message) error {
 }
 
 // Recv receives a complete message from websocket.
-func (pipe *WASMPipeWS) Recv() (*mangos.Message, error) {
+func (pipe *PipeWS) Recv() (*mangos.Message, error) {
 	buf := make([]byte, 1024*1024)
 	n, err := (*pipe.conn).Read(buf)
 	if err != nil {
@@ -92,26 +97,26 @@ func (pipe *WASMPipeWS) Recv() (*mangos.Message, error) {
 }
 
 // Close closes the websocket.
-func (pipe *WASMPipeWS) Close() error {
+func (pipe *PipeWS) Close() error {
 	pipe.open = false
 	return (*pipe.conn).Close()
 }
 
 // LocalProtocol returns the 16-bit SP protocol number used by the
 // local side.
-func (pipe *WASMPipeWS) LocalProtocol() uint16 {
+func (pipe *PipeWS) LocalProtocol() uint16 {
 	return pipe.proto.Number()
 }
 
 // RemoteProtocol returns the 16-bit SP protocol number used by the
-// remote side.  This will normally be received from the peer during
+// remote side. This will normally be received from the peer during
 // connection establishment.
-func (pipe *WASMPipeWS) RemoteProtocol() uint16 {
+func (pipe *PipeWS) RemoteProtocol() uint16 {
 	return pipe.proto.PeerNumber()
 }
 
 // IsOpen returns true if the underlying connection is open.
-func (pipe *WASMPipeWS) IsOpen() bool {
+func (pipe *PipeWS) IsOpen() bool {
 	return pipe.open
 }
 
@@ -119,14 +124,14 @@ func (pipe *WASMPipeWS) IsOpen() bool {
 // These are like options, but are read-only and specific to a single
 // connection. If the property doesn't exist, then ErrBadProperty
 // should be returned.
-func (pipe *WASMPipeWS) GetProp(string) (interface{}, error) {
+func (pipe *PipeWS) GetProp(string) (interface{}, error) {
 	return nil, mangos.ErrBadProperty
 }
 
 // Dial is used to initiate a connection to a remote peer.
 // It would open websocket connection to url specified in
 // dialer.
-func (dialer *WASMDialerWST) Dial() (mangos.Pipe, error) {
+func (dialer *DialerWS) Dial() (mangos.Pipe, error) {
 	conn, err := websocket.DialWithSubprotocols(
 		dialer.url,
 		[]string{
@@ -137,7 +142,7 @@ func (dialer *WASMDialerWST) Dial() (mangos.Pipe, error) {
 		log.Printf("Failed to establish websocket")
 		return nil, err
 	}
-	return &WASMPipeWS{
+	return &PipeWS{
 		proto: dialer.sock.GetProtocol(),
 		conn:  &conn,
 		open:  true,
@@ -147,12 +152,16 @@ func (dialer *WASMDialerWST) Dial() (mangos.Pipe, error) {
 // SetOption sets a local option on the dialer.
 // ErrBadOption can be returned for unrecognized options.
 // ErrBadValue can be returned for incorrect value types.
-func (dialer *WASMDialerWST) SetOption(name string, value interface{}) error {
+func (dialer *DialerWS) SetOption(
+	name string,
+	value interface{}) error {
 	return mangos.ErrBadOption
 }
 
 // GetOption gets a local option from the dialer.
 // ErrBadOption can be returned for unrecognized options.
-func (dialer *WASMDialerWST) GetOption(name string) (value interface{}, err error) {
+func (dialer *DialerWS) GetOption(name string) (
+	value interface{},
+	err error) {
 	return nil, mangos.ErrBadOption
 }

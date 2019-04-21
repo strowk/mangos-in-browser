@@ -37,6 +37,7 @@ func reqHandler(sock mangos.Socket) {
 }
 
 func addReqHandler(r *mux.Router, port int) {
+	log.Printf("adding handler")
 	sock, _ := rep.NewSocket()
 
 	sock.AddTransport(ws.NewTransport())

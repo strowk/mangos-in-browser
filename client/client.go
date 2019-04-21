@@ -1,7 +1,5 @@
 // MIT Licensed
 
-// +build wasm
-
 package main
 
 import (

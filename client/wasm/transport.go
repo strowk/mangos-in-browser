@@ -8,7 +8,9 @@ import (
 	"net"
 
 	"github.com/strowk/websocket"
-	mangos "nanomsg.org/go-mangos"
+
+	mangos "nanomsg.org/go/mangos/v2"
+	"nanomsg.org/go/mangos/v2/transport"
 )
 
 // MangosTransport is a transport which implements only
@@ -22,6 +24,10 @@ type MangosTransport struct {
 // Read more about Web Assembly in https://webassembly.org/
 func NewTransport() mangos.Transport {
 	return &MangosTransport{}
+}
+
+func init() {
+	transport.RegisterTransport(MangosTransport)
 }
 
 // NewListener would return error, because browser cannot listen.

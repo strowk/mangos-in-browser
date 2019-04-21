@@ -34,7 +34,7 @@ func init() {
 func (nng *MangosTransport) NewListener(
 	addr string,
 	sock mangos.Socket,
-) (mangos.PipeListener, error) {
+) (mangos.TranListener, error) {
 	return nil, errors.New("Cannot support listen in WASM")
 }
 
@@ -52,7 +52,7 @@ type DialerWS struct {
 // NewDialer creates WASMDialerWST.
 func (nng *MangosTransport) NewDialer(
 	url string,
-	sock mangos.Socket) (mangos.PipeDialer, error) {
+	sock mangos.Socket) (mangos.TranDialer, error) {
 	return &DialerWS{
 		sock: sock,
 		url:  url,

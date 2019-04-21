@@ -9,7 +9,7 @@ import (
 
 	"github.com/strowk/websocket"
 
-	mangos "nanomsg.org/go/mangos/v2"
+	mangos "nanomsg.org/go-mangos"
 	"nanomsg.org/go/mangos/v2/transport"
 )
 

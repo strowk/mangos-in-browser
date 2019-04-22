@@ -9,7 +9,7 @@ import (
 
 	"github.com/strowk/websocket"
 
-	mangos "nanomsg.org/go-mangos"
+	mangos "nanomsg.org/go/mangos/v2"
 	"nanomsg.org/go/mangos/v2/transport"
 )
 
@@ -26,8 +26,8 @@ func NewTransport() mangos.Transport {
 	return &MangosTransport{}
 }
 
-func init() {
-	transport.RegisterTransport(MangosTransport)
+func Init() {
+	transport.RegisterTransport(NewTransport())
 }
 
 // NewListener would return error, because browser cannot listen.
@@ -45,8 +45,9 @@ func (nng *MangosTransport) Scheme() string {
 
 // DialerWS dials websocket.
 type DialerWS struct {
-	sock mangos.Socket
-	url  string
+	sock  mangos.Socket
+	url   string
+	proto mangos.ProtocolInfo
 }
 
 // NewDialer creates WASMDialerWST.
@@ -54,8 +55,9 @@ func (nng *MangosTransport) NewDialer(
 	url string,
 	sock mangos.Socket) (mangos.TranDialer, error) {
 	return &DialerWS{
-		sock: sock,
-		url:  url,
+		sock:  sock,
+		url:   url,
+		proto: sock.Info(),
 	}, nil
 }
 
@@ -63,15 +65,15 @@ func (nng *MangosTransport) NewDialer(
 type PipeWS struct {
 	open  bool
 	conn  *net.Conn
-	proto mangos.Protocol
+	proto mangos.ProtocolInfo
 }
 
 // Send sends a complete message to websocket.
 func (pipe *PipeWS) Send(msg *mangos.Message) error {
-	if msg.Expired() {
-		msg.Free()
-		return nil
-	}
+	// if msg.Expired() {
+	// 	msg.Free()
+	// 	return nil
+	// }
 	var buf []byte
 	if len(msg.Header) > 0 {
 		buf = make([]byte, 0, len(msg.Header)+len(msg.Body))
@@ -111,14 +113,14 @@ func (pipe *PipeWS) Close() error {
 // LocalProtocol returns the 16-bit SP protocol number used by the
 // local side.
 func (pipe *PipeWS) LocalProtocol() uint16 {
-	return pipe.proto.Number()
+	return pipe.proto.Self
 }
 
 // RemoteProtocol returns the 16-bit SP protocol number used by the
 // remote side. This will normally be received from the peer during
 // connection establishment.
 func (pipe *PipeWS) RemoteProtocol() uint16 {
-	return pipe.proto.PeerNumber()
+	return pipe.proto.Self
 }
 
 // IsOpen returns true if the underlying connection is open.
@@ -137,11 +139,11 @@ func (pipe *PipeWS) GetProp(string) (interface{}, error) {
 // Dial is used to initiate a connection to a remote peer.
 // It would open websocket connection to url specified in
 // dialer.
-func (dialer *DialerWS) Dial() (mangos.Pipe, error) {
+func (dialer *DialerWS) Dial() (transport.Pipe, error) {
 	conn, err := websocket.DialWithSubprotocols(
 		dialer.url,
 		[]string{
-			dialer.sock.GetProtocol().PeerName() + ".sp.nanomsg.org",
+			dialer.proto.PeerName + ".sp.nanomsg.org",
 		},
 	) // Blocks until connection is established.
 	if err != nil {
@@ -149,7 +151,7 @@ func (dialer *DialerWS) Dial() (mangos.Pipe, error) {
 		return nil, err
 	}
 	return &PipeWS{
-		proto: dialer.sock.GetProtocol(),
+		proto: dialer.proto,
 		conn:  &conn,
 		open:  true,
 	}, nil
@@ -162,6 +164,14 @@ func (dialer *DialerWS) SetOption(
 	name string,
 	value interface{}) error {
 	return mangos.ErrBadOption
+}
+
+// GetOption gets a local option from the pipe.
+// ErrBadOption can be returned for unrecognized options.
+func (pipe *PipeWS) GetOption(name string) (
+	value interface{},
+	err error) {
+	return nil, mangos.ErrBadOption
 }
 
 // GetOption gets a local option from the dialer.

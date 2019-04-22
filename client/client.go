@@ -7,11 +7,9 @@ import (
 	"log"
 	"os"
 
-	"github.com/strowk/mangos-in-browser/client/wasm"
-
 	"github.com/gopherjs/gopherwasm/js"
-	"nanomsg.org/go-mangos"
-	"nanomsg.org/go-mangos/protocol/req"
+	wasm "github.com/strowk/mangos-in-browser/client/wasm"
+	"nanomsg.org/go/mangos/v2/protocol/req"
 )
 
 func die(format string, v ...interface{}) {
@@ -20,14 +18,15 @@ func die(format string, v ...interface{}) {
 	os.Exit(1)
 }
 
-func reqClient(port int, transport mangos.Transport) {
+func reqClient(port int) {
 	sock, e := req.NewSocket()
 	if e != nil {
 		die("cannot make req socket: %v", e)
 	}
 	defer sock.Close()
 
-	sock.AddTransport(transport)
+	// new mangos does not want this
+	// sock.AddTransport(transport)
 
 	url := fmt.Sprintf("ws://localhost:%d/req", port)
 
@@ -54,9 +53,10 @@ func reqClient(port int, transport mangos.Transport) {
 }
 
 func main() {
+	wasm.Init()
 	port := 8080
 	callback := js.NewCallback(func(args []js.Value) {
-		go reqClient(port, wasm.NewWASMTransport())
+		go reqClient(port)
 	})
 	defer callback.Release()
 	setReq := js.Global().Get("setReq")

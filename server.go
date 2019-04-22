@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"nanomsg.org/go-mangos"
-	"nanomsg.org/go-mangos/protocol/rep"
-	"nanomsg.org/go-mangos/transport/ws"
+	"nanomsg.org/go/mangos/v2"
+	"nanomsg.org/go/mangos/v2/protocol/rep"
+	"nanomsg.org/go/mangos/v2/transport/ws"
 )
 
 func die(format string, v ...interface{}) {
@@ -40,7 +40,8 @@ func addReqHandler(r *mux.Router, port int) {
 	log.Printf("adding handler")
 	sock, _ := rep.NewSocket()
 
-	sock.AddTransport(ws.NewTransport())
+	// new mangos does not want this
+	// sock.AddTransport(ws.NewTransport())
 
 	url := fmt.Sprintf("ws://localhost:%d/req", port)
 	if l, e := sock.NewListener(url, nil); e != nil {
